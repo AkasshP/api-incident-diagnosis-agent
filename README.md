@@ -111,7 +111,7 @@ If Order timed out and the evidence leaves Inventory handler entry unresolved, t
 - `scenarios` contains objects with a unique `id`, a `visible_records` array, and a `candidate_records` object. Map every candidate name to an array of records that candidate would expose in the scenario. Use an empty array when it emits nothing.
 - Use comparable record objects across scenarios. Omit scenario-specific metadata such as synthetic IDs and timestamps unless it represents a difference the investigator could use. For each candidate, compare its projected records only across pairs with identical baseline records. Every pair the candidate separates adds one point. Candidates are scored independently under the one-event budget.
 
-With two sample scenarios that share the same visible timeout, an extra Gateway timeout and basic readiness check each score 0 if their records are identical in both scenarios. A request-correlated `handler_entered` event scores 1 if only the scenario that reaches Inventory emits it. This excerpt comes from a run with temporary replay data.
+With two sample scenarios that share the same visible timeout, an extra Gateway timeout and basic readiness check each score 0 if their records are identical in both scenarios. A request-correlated `handler_entered` event scores 1 if only the scenario that reaches Inventory emits it. This excerpt comes from a run with the saved replay scenarios.
 
 ```json
 {
@@ -141,7 +141,7 @@ The full output includes candidate scores, instrumentation locations, expected b
 
 #### Demo integration
 
-- [ ] Run the CLI against Ramya's fixtures and resolve any file schema, route, or event-name mismatches.
+- [x] Run the CLI against Ramya's fixtures and resolve any file schema, route, or event-name mismatches.
 - [x] Add a recent failed-request list that shows route, HTTP status, and request ID. Selecting a row should open the matching evidence bundle. Keep the existing CLI arguments available.
 
 #### Telemetry Advisor and offline replay
@@ -150,7 +150,7 @@ The full output includes candidate scores, instrumentation locations, expected b
 - [x] Build an offline replay runner that reads Ramya's saved scenarios and projects the records each candidate event would expose.
 - [x] Score each candidate by the number of previously indistinguishable scenario pairs it separates. Report the score and any ties.
 - [x] Print the candidate's event name, instrumentation location, expected benefit, and remaining uncertainty. Keep the original incident diagnosis unresolved.
-- [ ] Verify the documented diagnosis and advisor sample outputs against Ramya's fixtures after integration.
+- [x] Verify the documented diagnosis and advisor sample outputs against Ramya's fixtures after integration.
 
 ### Ramya Karuthappandian — Incident evidence and evaluation
 
