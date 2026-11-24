@@ -1,0 +1,3 @@
+[
+  {"check_id":"HC10","checked_at":"2026-11-23T14:00:10Z","target_service":"Inventory Service","observed_from":"Order Service","path":"/ready","result":"timeout"}
+]

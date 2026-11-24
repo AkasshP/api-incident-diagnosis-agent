@@ -1,0 +1,31 @@
+{
+  "candidates": [
+    {"event_name": "gateway_timeout", "instrumentation_location": "API Gateway, when its call to Order Service times out", "expected_benefit": "Confirms the client-facing 504 came from the Order call."},
+    {"event_name": "readiness_check", "instrumentation_location": "Order Service probe of Inventory Service /ready", "expected_benefit": "Shows whether Inventory answered a basic health probe near the incident."},
+    {"event_name": "handler_entered", "instrumentation_location": "Inventory Service, first line of the POST /orders handler, tagged with request_id", "expected_benefit": "Shows whether this specific request reached Inventory."}
+  ],
+  "scenarios": [
+    {
+      "id": "never-entered",
+      "visible_records": [
+        {"service": "Order Service", "event_type": "downstream_timeout", "downstream_service": "Inventory Service", "route": "POST /orders"}
+      ],
+      "candidate_records": {
+        "gateway_timeout": [{"service": "API Gateway", "event_type": "downstream_timeout", "downstream_service": "Order Service", "route": "POST /orders"}],
+        "readiness_check": [{"target_service": "Inventory Service", "path": "/ready", "result": "timeout"}],
+        "handler_entered": []
+      }
+    },
+    {
+      "id": "entered-no-response",
+      "visible_records": [
+        {"service": "Order Service", "event_type": "downstream_timeout", "downstream_service": "Inventory Service", "route": "POST /orders"}
+      ],
+      "candidate_records": {
+        "gateway_timeout": [{"service": "API Gateway", "event_type": "downstream_timeout", "downstream_service": "Order Service", "route": "POST /orders"}],
+        "readiness_check": [{"target_service": "Inventory Service", "path": "/ready", "result": "timeout"}],
+        "handler_entered": [{"service": "Inventory Service", "event_type": "handler_entered", "route": "POST /orders"}]
+      }
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "assumption": "Replay assumes every candidate event would be emitted and collected reliably. Ground truth is known only because these scenarios are simulated; it is never shown to the agent.",
+  "scenarios": {
+    "never-entered": "The request was sent by Order Service but never reached the Inventory handler.",
+    "entered-no-response": "The Inventory handler started, but no response reached Order Service before its timeout."
+  }
+}
