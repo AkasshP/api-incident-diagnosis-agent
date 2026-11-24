@@ -30,6 +30,28 @@ Use Python 3.9 or later. The CLI prints a JSON report and uses only the standard
 python3 agent.py path/to/incident request-123 --health-window-seconds 300
 ```
 
+### Run the LLM agent
+
+`llm_agent.py` uses a free local model through [Ollama](https://ollama.com). The model decides which tool to call at each step, when to stop, and what the outcome is. It prints each decision and its reason as it goes.
+
+![LLM agent architecture: decision loop, guardrails, report builder, and independent verification](architecture-diagram.png)
+
+```sh
+ollama pull qwen2.5:7b
+python3 llm_agent.py incidents/inventory-outage request-200
+```
+
+The program only runs the tools the model asks for. A finish is rejected, and the model keeps investigating, if the evidence it has seen does not support the outcome, if it skipped the logs of a service the request reached, or if its summary claims a cause for a timeout or failure. Citations come from the records the model actually saw. The report's `verification` field compares the model's answer with the rule-based diagnosis from `agent.py`. Use `--model` to try another Ollama model.
+
+### Run the evaluation
+
+```sh
+python3 evaluate.py        # rule-based agent and replay advisor
+python3 evaluate.py --llm  # also the LLM agent
+```
+
+Sample incidents are in `incidents/`, replay scenarios in `replay/`, and the latest results in `evaluation/results.md`.
+
 Point the CLI at a folder containing the evidence files below. Use timezone-aware ISO 8601 timestamps such as `2026-11-23T14:00:00Z`. By default, a health check can be up to five minutes before or after the Order timeout.
 
 | Evidence | Format |
@@ -79,7 +101,7 @@ If the only matching record is the Order timeout, the diagnosis looks like this.
 ### Run the Telemetry Advisor
 
 ```sh
-python3 agent.py advisor incidents/missing-inventory request-123 replay.json \
+python3 agent.py advisor incidents/missing-inventory request-123 replay/replay.json \
   --missing-observation inventory_handler_entry --budget 1
 ```
 

@@ -1,4 +1,8 @@
-"""Run the agent on the saved incidents and compare its reports with expected results."""
+"""Run the agent on the saved incidents and compare its reports with expected results.
+
+Usage: python3 evaluate.py            # rule-based agent and replay
+       python3 evaluate.py --llm      # also the Ollama agent (optionally --llm MODEL)
+"""
 
 import sys
 from pathlib import Path
@@ -6,6 +10,7 @@ from pathlib import Path
 from agent import diagnose
 from demo import replay
 from evidence import Evidence
+from llm_agent import DEFAULT_MODEL, TOOLS, investigate
 
 ROOT = Path(__file__).parent
 GW, ORDER, INV = "API Gateway", "Order Service", "Inventory Service"
@@ -101,7 +106,26 @@ def check_replay():
     return scores, problems
 
 
+def check_llm_case(case, model):
+    report = investigate(ROOT / case["folder"], case["request_id"], model, 300)
+    problems = list(report["verification"]["problems"])
+    if report["outcome"] != case["outcome"]:
+        problems.append(f"outcome {report['outcome']!r}, expected {case['outcome']!r}")
+    if set(report["citations"]) != set(case["citations"]):
+        problems.append(f"citations {report['citations']}, expected {case['citations']}")
+    expected_services = {service for _, service in case["tool_calls"]}
+    used = {d["arguments"].get("service") for d in report["decisions"] if d.get("arguments")}
+    if used - expected_services:
+        problems.append(f"looked at services it did not need: {sorted(used - expected_services)}")
+    return report, problems
+
+
 def main():
+    llm_model = None
+    if "--llm" in sys.argv:
+        position = sys.argv.index("--llm")
+        following = sys.argv[position + 1:position + 2]
+        llm_model = following[0] if following and not following[0].startswith("-") else DEFAULT_MODEL
     lines = ["| Case | Expected | Actual | Citations | Result |", "|---|---|---|---|---|"]
     failures = 0
     for case in CASES:
@@ -122,8 +146,21 @@ def main():
     )
     lines.extend(f"|  ↳ {problem} | | | | |" for problem in problems)
 
+    total = len(CASES) + 1
+    if llm_model:
+        for case in CASES:
+            report, problems = check_llm_case(case, llm_model)
+            failures += bool(problems)
+            steps = sum(1 for d in report["decisions"] if d.get("action") in TOOLS)
+            lines.append(
+                f"| LLM ({llm_model}): {case['name']} | {case['outcome']} | {report['outcome']} | "
+                f"{', '.join(report['citations'])} ({steps} tool calls) | {'FAIL' if problems else 'PASS'} |"
+            )
+            lines.extend(f"|  ↳ {problem} | | | | |" for problem in problems)
+        total += len(CASES)
+
     print("\n".join(lines))
-    print(f"\n{len(CASES) + 1 - failures}/{len(CASES) + 1} checks passed.")
+    print(f"\n{total - failures}/{total} checks passed.")
     return 1 if failures else 0
 
 
