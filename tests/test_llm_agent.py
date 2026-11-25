@@ -75,7 +75,10 @@ class ArchitectureTests(unittest.TestCase):
         self.assertEqual(report["tool_trace"][2]["tool"], "check_endpoint_status")
 
     def test_missing_record_is_a_verified_outcome(self):
-        timeout = Evidence(MISSING).read_logs("request-123", ORDER)[0]["timestamp"]
+        timeout = next(
+            row["timestamp"] for row in Evidence(MISSING).read_logs("request-123", ORDER)
+            if row["event_type"] == "downstream_timeout"
+        )
         report = self.investigate_with(MISSING, "request-123", [
             read(GATEWAY), read(ORDER), read(INVENTORY),
             decision("inspect_dependencies", service=ORDER, route="POST /orders"),

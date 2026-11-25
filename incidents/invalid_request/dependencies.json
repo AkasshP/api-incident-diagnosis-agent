@@ -1,4 +1,43 @@
 {
-  "API Gateway": {"POST /orders": "Order Service"},
-  "Order Service": {"POST /orders": "Inventory Service"}
+  "API Gateway": {
+    "POST /orders": "Order Service",
+    "GET /orders/{id}": "Order Service",
+    "POST /orders/{id}/cancel": "Order Service",
+    "GET /orders/{id}/status": "Order Service",
+    "POST /orders/{id}/returns": "Order Service"
+  },
+  "Order Service": {
+    "POST /orders": "Inventory Service",
+    "POST /payments/authorize": "Payment Service",
+    "POST /fraud/checks": "Fraud Service",
+    "POST /shipments": "Shipping Service",
+    "POST /notifications": "Notification Service",
+    "POST /inventory/reservations": "Inventory Service",
+    "POST /inventory/releases": "Inventory Service",
+    "POST /payments/refund": "Payment Service",
+    "GET /shipments/{id}": "Shipping Service",
+    "POST /notifications/order-updates": "Notification Service",
+    "GET /inventory/{sku}/availability": "Inventory Service",
+    "GET /payments/{id}": "Payment Service",
+    "POST /fraud/reviews": "Fraud Service",
+    "POST /shipments/{id}/cancel": "Shipping Service",
+    "GET /notifications/{id}": "Notification Service"
+  },
+  "Payment Service": {
+    "POST /payments/risk-check": "Fraud Service",
+    "POST /payments/notify": "Notification Service"
+  },
+  "Shipping Service": {
+    "POST /shipments/notify": "Notification Service",
+    "GET /shipments/{id}/order": "Order Service"
+  },
+  "Inventory Service": {
+    "POST /inventory/notify": "Notification Service"
+  },
+  "Fraud Service": {
+    "GET /fraud/orders/{id}": "Order Service"
+  },
+  "Notification Service": {
+    "GET /notifications/{id}/order": "Order Service"
+  }
 }
