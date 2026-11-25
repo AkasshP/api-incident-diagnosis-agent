@@ -4,12 +4,12 @@
 
 - Implemented the [CLI and diagnostic report](agent.py), including evidence-driven investigation and next-record requests.
 - Implemented [read-only evidence tools](../tools.py) for request logs, dependencies, and time-filtered health observations.
-- Documented the [CLI and evidence formats](../README.md#run-locally) and verified the diagnosis paths with temporary evidence.
+- Documented the [CLI and evidence formats](../README.md#1-set-up-the-project) and verified the diagnosis paths with temporary evidence.
 - Added [recent-request selection and offline telemetry replay](demo.py), including candidate scoring and tie reporting. Verified both commands with temporary scenarios.
 - Hardened [the investigation loop](../llm_agent.py) and added [regression checks](../tests/test_llm_agent.py) for validation, retries, strict finish checks, and independent verification.
 - Separated evidence tools, guardrails, report building, and verification into modules. Added input validation, bounded model retries, and finish checks that require supporting observations. [Guardrails](../guardrails.py) · [Report builder](../report_builder.py) · [Verifier](../verifier.py)
 - Built the Streamlit dashboard and local order simulator. The dashboard supports demo and custom HTTP requests, shows request history, and lets students inspect tool arguments, results, cited evidence, and verification status. [Dashboard](../streamlit_app.py) · [Demo API](../dashboard/orders_api.py)
-- Verified the saved invalid-request and insufficient-evidence cases with `qwen3:8b`. The invalid request stopped at Gateway and cited `E11`. The insufficient-evidence case cited `E31` and asked for the matching Inventory handler record. Added a walkthrough for students to reproduce and explain the results. [Student walkthrough](../README.md#student-walkthrough) · [Evaluation results](../results/evaluation_results.json)
+- Verified the saved invalid-request and insufficient-evidence cases with `qwen3:8b`. The invalid request stopped at Gateway and cited `E11`. The insufficient-evidence case cited `E31` and asked for the matching Inventory handler record. Added a walkthrough for students to reproduce and explain the results. [Saved incident walkthrough](../README.md#2-run-the-three-saved-incidents) · [Evaluation results](../results/evaluation_results.json)
 
 ## Ramya Karuthappandian
 

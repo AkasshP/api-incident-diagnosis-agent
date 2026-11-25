@@ -77,16 +77,20 @@ EXPECTED_REPLAY = {
 }
 
 
+def compare_outcome_and_fields(case, report):
+    expected_fields = {"outcome": case["outcome"], **case["fields"]}
+    return [
+        f"{field} {report.get(field)!r}, expected {expected!r}"
+        for field, expected in expected_fields.items()
+        if report.get(field) != expected
+    ]
+
+
 def check_case(case):
     report = diagnose(Evidence(ROOT / case["folder"]), case["request_id"], DEFAULT_WINDOW_SECONDS)
-    problems = []
-    if report["outcome"] != case["outcome"]:
-        problems.append(f"outcome {report['outcome']!r}, expected {case['outcome']!r}")
+    problems = compare_outcome_and_fields(case, report)
     if report["citations"] != case["citations"]:
         problems.append(f"citations {report['citations']}, expected {case['citations']}")
-    for key, value in case["fields"].items():
-        if report.get(key) != value:
-            problems.append(f"{key} {report.get(key)!r}, expected {value!r}")
     calls = [(call["tool"], call.get("service")) for call in report["tool_trace"]]
     if calls != case["tool_calls"]:
         problems.append(f"tool calls {calls}, expected {case['tool_calls']}")
@@ -110,8 +114,7 @@ def check_replay():
 def check_llm_case(case, model):
     report = investigate(ROOT / case["folder"], case["request_id"], model, DEFAULT_WINDOW_SECONDS)
     problems = list(report["verification"]["problems"])
-    if report["outcome"] != case["outcome"]:
-        problems.append(f"outcome {report['outcome']!r}, expected {case['outcome']!r}")
+    problems.extend(compare_outcome_and_fields(case, report))
     if set(report["citations"]) != set(case["citations"]):
         problems.append(f"citations {report['citations']}, expected {case['citations']}")
     expected_calls = set(case["tool_calls"])
@@ -121,9 +124,6 @@ def check_llm_case(case, model):
     extra_services = {service for _, service in used} - {service for _, service in expected_calls}
     if extra_services:
         problems.append(f"looked at services it did not need: {sorted(extra_services)}")
-    for key, value in case["fields"].items():
-        if report.get(key) != value:
-            problems.append(f"{key} {report.get(key)!r}, expected {value!r}")
     return report, problems
 
 
@@ -137,7 +137,8 @@ def main():
     lines = ["| Case | Expected | Actual | Citations | Result |", "|---|---|---|---|---|"]
     results = []
 
-    def save_case(case, report, problems, model=None):
+    def add_incident_result(case, report, problems, model=None):
+        tool_calls = len(report["tool_trace"])
         results.append({
             "case": case["name"],
             "mode": "ollama" if model else "rules",
@@ -145,19 +146,21 @@ def main():
             "expected": case["outcome"],
             "actual": report["outcome"],
             "citations": report["citations"],
-            "tool_calls": len(report["tool_trace"]),
+            "tool_calls": tool_calls,
             "passed": not problems,
             "problems": problems,
         })
+        name = f"LLM ({model}): {case['name']}" if model else case["name"]
+        citations = ", ".join(report["citations"])
+        if model:
+            citations += f" ({tool_calls} tool calls)"
+        status = "FAIL" if problems else "PASS"
+        lines.append(f"| {name} | {case['outcome']} | {report['outcome']} | {citations} | {status} |")
+        lines.extend(f"|  ↳ {problem} | | | | |" for problem in problems)
 
     for case in CASES:
         report, problems = check_case(case)
-        save_case(case, report, problems)
-        lines.append(
-            f"| {case['name']} | {case['outcome']} | {report['outcome']} | "
-            f"{', '.join(report['citations'])} | {'FAIL' if problems else 'PASS'} |"
-        )
-        lines.extend(f"|  ↳ {problem} | | | | |" for problem in problems)
+        add_incident_result(case, report, problems)
 
     scores, problems = check_replay()
     results.append({
@@ -177,13 +180,7 @@ def main():
     if llm_model:
         for case in CASES:
             report, problems = check_llm_case(case, llm_model)
-            save_case(case, report, problems, llm_model)
-            steps = len(report["tool_trace"])
-            lines.append(
-                f"| LLM ({llm_model}): {case['name']} | {case['outcome']} | {report['outcome']} | "
-                f"{', '.join(report['citations'])} ({steps} tool calls) | {'FAIL' if problems else 'PASS'} |"
-            )
-            lines.extend(f"|  ↳ {problem} | | | | |" for problem in problems)
+            add_incident_result(case, report, problems, llm_model)
 
     print("\n".join(lines))
     passed = sum(case["passed"] for case in results)
