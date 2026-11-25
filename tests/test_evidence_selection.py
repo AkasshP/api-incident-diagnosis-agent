@@ -54,7 +54,7 @@ INCIDENTS = {
     "invalid_request": {
         "folder": ROOT / "incidents/invalid_request",
         "request_id": "request-100",
-        "logs": {GATEWAY: ["E10", "E15", "E11"], ORDER: [], INVENTORY: []},
+        "logs": {GATEWAY: ["E10", "E101", "E15", "E11", "E102"], ORDER: [], INVENTORY: []},
         "recent_errors": ["E11"],
         "routes": {
             (GATEWAY, ROUTE): ORDER,
@@ -73,10 +73,10 @@ INCIDENTS = {
     "service_outage": {
         "folder": ROOT / "incidents/service_outage",
         "request_id": "request-200",
-        "logs": {GATEWAY: ["E20", "E27"], ORDER: ["E23", "E21"], INVENTORY: ["E22"]},
+        "logs": {GATEWAY: ["E20", "E201", "E205", "E27"], ORDER: ["E202", "E204", "E23", "E21"], INVENTORY: ["E22"]},
         "recent_errors": ["E21", "E22"],
         "routes": {(GATEWAY, ROUTE): ORDER, (ORDER, ROUTE): INVENTORY},
-        "probes": (INVENTORY, "2026-11-23T14:00:30Z", ["HC17", "HC18", "HC22"]),
+        "probes": (INVENTORY, "2026-11-23T14:00:30Z", ["HC20403", "HC20503", "HC17", "HC20603", "HC18", "HC22", "HC20703"]),
         "outcome": "inventory_failure",
         "citations": ["HC17", "E22", "E21", "HC18"],
         "next_record": None,
@@ -93,10 +93,10 @@ INCIDENTS = {
     "insufficient_evidence": {
         "folder": ROOT / "incidents/insufficient_evidence",
         "request_id": "request-123",
-        "logs": {GATEWAY: ["E30"], ORDER: ["E32", "E31"], INVENTORY: []},
+        "logs": {GATEWAY: ["E30", "E301", "E305"], ORDER: ["E302", "E32", "E304", "E31"], INVENTORY: []},
         "recent_errors": ["E31"],
         "routes": {(ORDER, ROUTE): INVENTORY},
-        "probes": (INVENTORY, "2026-11-23T14:00:30Z", ["HC36"]),
+        "probes": (INVENTORY, "2026-11-23T14:00:30Z", ["HC30403", "HC30503", "HC30603", "HC36", "HC30703"]),
         "outcome": "insufficient_evidence",
         "citations": ["E31"],
         "next_record": "An Inventory Service handler event for request request-123.",
@@ -284,7 +284,7 @@ class ToolSelectionTests(unittest.TestCase):
         self.assertEqual(evidence.read_recent_errors("request-999"), [])
         self.assertIsNone(evidence.inspect_dependencies("Payment Service", ROUTE))
         self.assertIsNone(evidence.inspect_dependencies(ORDER, "DELETE /orders"))
-        self.assertEqual(evidence.check_endpoint_status("Payment Service", "2026-11-23T14:00:30Z", WINDOW), [])
+        self.assertEqual(evidence.check_endpoint_status("Unknown Service", "2026-11-23T14:00:30Z", WINDOW), [])
         self.assertEqual(evidence.check_endpoint_status(INVENTORY, "not a time", WINDOW), [])
 
     def test_recent_errors_keep_only_the_five_newest(self):
