@@ -69,7 +69,9 @@ python3 evaluate.py
 python3 evaluate.py --llm
 ```
 
-The first command runs nine regression tests. The second runs five baseline checks without Ollama. The third runs nine checks, including four live Ollama cases. The [evidence-removal fixture](tests/fixtures/outage_evidence_removed/) checks that the diagnosis returns to insufficient evidence when the Inventory handler error and readiness timeouts are removed. See the [recorded evaluation](results/evaluation_results.json).
+The first command runs 30 tests without Ollama. The second runs ten baseline checks without Ollama. The third adds seven live Ollama cases, for 17 checks. The [evidence-removal fixture](tests/fixtures/outage_evidence_removed/) checks that the diagnosis returns to insufficient evidence when the Inventory handler error and readiness timeouts are removed. See the [recorded evaluation](results/evaluation_results.json).
+
+[`tests/test_evidence_selection.py`](tests/test_evidence_selection.py) checks which records each tool returns for every incident. Each incident mixes the records that matter with decoys: other requests' errors, non-failure events for the same request, probes one second outside the 300-second window, probes of the wrong service, and extra routes. The tests confirm that every tool returns only this request's records, that decoys are never cited, that an early finish lists the specific checks still needed, and that a wrong outcome is rejected with the supported one. Five extra fixtures in [`tests/fixtures/`](tests/fixtures/) cover a Gateway-to-Order timeout, timeouts down the whole chain, probes at the window edges, a route map that disagrees with the logs, and corrupt log lines.
 
 ## How the agent works
 

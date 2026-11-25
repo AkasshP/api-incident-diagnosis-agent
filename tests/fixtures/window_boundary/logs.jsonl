@@ -1,0 +1,3 @@
+{"event_id":"E70","timestamp":"2026-11-23T17:00:00Z","request_id":"request-700","service":"Order Service","event_type":"downstream_timeout","details":{"downstream_service":"Inventory Service","route":"POST /orders","timeout_ms":30000}}
+{"event_id":"E71","timestamp":"2026-11-23T16:59:50Z","request_id":"request-700","service":"Inventory Service","event_type":"handler_error","details":{"route":"POST /orders","error":"stock reservation did not complete"}}
+{"event_id":"E72","timestamp":"2026-11-23T16:59:30Z","request_id":"request-700","service":"API Gateway","event_type":"request_received","details":{"route":"POST /orders"}}

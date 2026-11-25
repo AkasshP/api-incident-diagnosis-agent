@@ -1,0 +1,2 @@
+{"event_id":"E60","timestamp":"2026-11-23T18:00:30Z","request_id":"request-600","service":"Order Service","event_type":"downstream_timeout","details":{"downstream_service":"Inventory Service","route":"POST /orders","timeout_ms":30000}}
+{"event_id":"E61","timestamp":"2026-11-23T18:00:20Z","request_id":"request-600","service":"Inventory Service","event_type":"handler_error","details":{"route":"POST /orders","error":"stock reservation did not complete"}}

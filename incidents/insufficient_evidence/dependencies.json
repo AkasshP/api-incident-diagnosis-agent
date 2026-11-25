@@ -4,7 +4,9 @@
     "GET /orders/{id}": "Order Service",
     "POST /orders/{id}/cancel": "Order Service",
     "GET /orders/{id}/status": "Order Service",
-    "POST /orders/{id}/returns": "Order Service"
+    "POST /orders/{id}/returns": "Order Service",
+    "GET /orders": "Order Service",
+    "POST /payments": "Payment Service"
   },
   "Order Service": {
     "POST /orders": "Inventory Service",
@@ -21,11 +23,13 @@
     "GET /payments/{id}": "Payment Service",
     "POST /fraud/reviews": "Fraud Service",
     "POST /shipments/{id}/cancel": "Shipping Service",
-    "GET /notifications/{id}": "Notification Service"
+    "GET /notifications/{id}": "Notification Service",
+    "GET /orders": "Order Database"
   },
   "Payment Service": {
     "POST /payments/risk-check": "Fraud Service",
-    "POST /payments/notify": "Notification Service"
+    "POST /payments/notify": "Notification Service",
+    "POST /payments": "Bank Gateway"
   },
   "Shipping Service": {
     "POST /shipments/notify": "Notification Service",

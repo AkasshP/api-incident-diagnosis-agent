@@ -1,0 +1,5 @@
+{
+  "API Gateway": {"POST /orders": "Order Service", "GET /orders": "Order Service", "POST /payments": "Payment Service"},
+  "Order Service": {"POST /orders": "Inventory Service", "GET /orders": "Order Database"},
+  "Payment Service": {"POST /payments": "Bank Gateway"}
+}

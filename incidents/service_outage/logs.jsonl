@@ -721,6 +721,7 @@
 {"event_id":"E-T2-076-08","timestamp":"2026-11-23T14:00:08Z","request_id":"traffic-2-076","service":"Notification Service","event_type":"notification_queued","details":{"route":"POST /notifications"}}
 {"event_id":"E-T2-076-09","timestamp":"2026-11-23T14:00:09Z","request_id":"traffic-2-076","service":"API Gateway","event_type":"response_sent","details":{"route":"POST /orders","http_status":201}}
 {"event_id":"E204","timestamp":"2026-11-23T14:00:10Z","request_id":"request-200","service":"Order Service","event_type":"downstream_call_started","details":{"route":"POST /orders","downstream_service":"Inventory Service"}}
+{"event_id":"E23","timestamp":"2026-11-23T14:00:10Z","request_id":"request-200","service":"Order Service","event_type":"order_created","details":{"route":"POST /orders","order_id":"order-77"}}
 {"event_id":"E22","timestamp":"2026-11-23T14:00:20Z","request_id":"request-200","service":"Inventory Service","event_type":"handler_error","details":{"route":"POST /orders","error":"stock reservation did not complete"}}
 {"event_id":"E-T2-077-01","timestamp":"2026-11-23T14:00:21Z","request_id":"traffic-2-077","service":"API Gateway","event_type":"request_received","details":{"route":"POST /orders"}}
 {"event_id":"E-T2-077-02","timestamp":"2026-11-23T14:00:22Z","request_id":"traffic-2-077","service":"API Gateway","event_type":"request_forwarded","details":{"route":"POST /orders","downstream_service":"Order Service"}}
@@ -739,10 +740,12 @@
 {"event_id":"E21405","timestamp":"2026-11-23T14:00:30Z","request_id":"background-2-14","service":"Payment Service","event_type":"authorization_completed","details":{"route":"POST /payments/authorize"}}
 {"event_id":"E205","timestamp":"2026-11-23T14:00:31Z","request_id":"request-200","service":"API Gateway","event_type":"response_sent","details":{"route":"POST /orders","http_status":504}}
 {"event_id":"E21406","timestamp":"2026-11-23T14:00:31Z","request_id":"background-2-14","service":"Shipping Service","event_type":"shipment_created","details":{"route":"POST /shipments"}}
+{"event_id":"E27","timestamp":"2026-11-23T14:00:31Z","request_id":"request-200","service":"API Gateway","event_type":"response_sent","details":{"route":"POST /orders","http_status":504}}
 {"event_id":"E206","timestamp":"2026-11-23T14:00:32Z","request_id":"request-903","service":"Payment Service","event_type":"handler_error","details":{"route":"POST /payments/authorize"}}
 {"event_id":"E21407","timestamp":"2026-11-23T14:00:32Z","request_id":"background-2-14","service":"Notification Service","event_type":"notification_queued","details":{"route":"POST /notifications"}}
 {"event_id":"E21408","timestamp":"2026-11-23T14:00:33Z","request_id":"background-2-14","service":"API Gateway","event_type":"response_sent","details":{"route":"POST /orders","http_status":201}}
 {"event_id":"E207","timestamp":"2026-11-23T14:00:34Z","request_id":"request-904","service":"Shipping Service","event_type":"shipment_created","details":{"route":"POST /shipments"}}
+{"event_id":"E25","timestamp":"2026-11-23T14:00:35Z","request_id":"request-201","service":"Order Service","event_type":"downstream_timeout","details":{"downstream_service":"Inventory Service","route":"POST /orders","timeout_ms":30000}}
 {"event_id":"E208","timestamp":"2026-11-23T14:00:36Z","request_id":"request-904","service":"Notification Service","event_type":"notification_queued","details":{"route":"POST /notifications"}}
 {"event_id":"E29","timestamp":"2026-11-23T14:00:40Z","request_id":"request-998","service":"Inventory Service","event_type":"handler_error","details":{"route":"POST /orders","error":"unrelated request"}}
 {"event_id":"E-T2-078-01","timestamp":"2026-11-23T14:00:41Z","request_id":"traffic-2-078","service":"API Gateway","event_type":"request_received","details":{"route":"POST /orders"}}
@@ -752,6 +755,7 @@
 {"event_id":"E-T2-078-05","timestamp":"2026-11-23T14:00:45Z","request_id":"traffic-2-078","service":"Inventory Service","event_type":"handler_error","details":{"route":"POST /orders","error":"stock reservation did not complete"}}
 {"event_id":"E-T2-078-06","timestamp":"2026-11-23T14:00:46Z","request_id":"traffic-2-078","service":"Order Service","event_type":"downstream_timeout","details":{"route":"POST /orders","downstream_service":"Inventory Service"}}
 {"event_id":"E-T2-078-07","timestamp":"2026-11-23T14:00:47Z","request_id":"traffic-2-078","service":"API Gateway","event_type":"response_sent","details":{"route":"POST /orders","http_status":504}}
+{"event_id":"E26","timestamp":"2026-11-23T14:00:50Z","request_id":"request-201","service":"Inventory Service","event_type":"handler_error","details":{"route":"POST /orders","error":"unrelated request"}}
 {"event_id":"E21501","timestamp":"2026-11-23T14:00:51Z","request_id":"background-2-15","service":"API Gateway","event_type":"request_received","details":{"route":"POST /orders"}}
 {"event_id":"E21502","timestamp":"2026-11-23T14:00:52Z","request_id":"background-2-15","service":"Order Service","event_type":"request_received","details":{"route":"POST /orders"}}
 {"event_id":"E21503","timestamp":"2026-11-23T14:00:53Z","request_id":"background-2-15","service":"Inventory Service","event_type":"reservation_completed","details":{"route":"POST /inventory/reservations"}}

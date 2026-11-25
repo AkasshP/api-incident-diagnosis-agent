@@ -701,6 +701,7 @@
 {"event_id":"E-T1-075-09","timestamp":"2026-11-23T13:59:49Z","request_id":"traffic-1-075","service":"API Gateway","event_type":"response_sent","details":{"route":"POST /orders","http_status":201}}
 {"event_id":"E10","timestamp":"2026-11-23T13:59:58Z","request_id":"request-100","service":"API Gateway","event_type":"request_received","details":{"route":"POST /orders"}}
 {"event_id":"E101","timestamp":"2026-11-23T13:59:59Z","request_id":"request-100","service":"API Gateway","event_type":"validation_started","details":{"route":"POST /orders"}}
+{"event_id":"E15","timestamp":"2026-11-23T13:59:59Z","request_id":"request-100","service":"API Gateway","event_type":"auth_checked","details":{"route":"POST /orders","result":"allowed"}}
 {"event_id":"E11","timestamp":"2026-11-23T14:00:00Z","request_id":"request-100","service":"API Gateway","event_type":"validation_error","details":{"route":"POST /orders","missing_field":"item_id","http_status":400}}
 {"event_id":"E102","timestamp":"2026-11-23T14:00:01Z","request_id":"request-100","service":"API Gateway","event_type":"response_sent","details":{"route":"POST /orders","http_status":400}}
 {"event_id":"E11301","timestamp":"2026-11-23T14:00:01Z","request_id":"background-1-13","service":"API Gateway","event_type":"request_received","details":{"route":"POST /orders"}}
@@ -726,11 +727,13 @@
 {"event_id":"E11308","timestamp":"2026-11-23T14:00:08Z","request_id":"background-1-13","service":"API Gateway","event_type":"response_sent","details":{"route":"POST /orders","http_status":201}}
 {"event_id":"E-T1-076-08","timestamp":"2026-11-23T14:00:08Z","request_id":"traffic-1-076","service":"Notification Service","event_type":"notification_queued","details":{"route":"POST /notifications"}}
 {"event_id":"E-T1-076-09","timestamp":"2026-11-23T14:00:09Z","request_id":"traffic-1-076","service":"API Gateway","event_type":"response_sent","details":{"route":"POST /orders","http_status":201}}
+{"event_id":"E13","timestamp":"2026-11-23T14:00:20Z","request_id":"request-101","service":"API Gateway","event_type":"validation_error","details":{"route":"POST /orders","missing_field":"customer_id","http_status":400}}
 {"event_id":"E-T1-077-01","timestamp":"2026-11-23T14:00:21Z","request_id":"traffic-1-077","service":"API Gateway","event_type":"request_received","details":{"route":"POST /orders"}}
 {"event_id":"E-T1-077-02","timestamp":"2026-11-23T14:00:22Z","request_id":"traffic-1-077","service":"API Gateway","event_type":"request_forwarded","details":{"route":"POST /orders","downstream_service":"Order Service"}}
 {"event_id":"E-T1-077-03","timestamp":"2026-11-23T14:00:23Z","request_id":"traffic-1-077","service":"Order Service","event_type":"request_received","details":{"route":"POST /orders"}}
 {"event_id":"E-T1-077-04","timestamp":"2026-11-23T14:00:24Z","request_id":"traffic-1-077","service":"Fraud Service","event_type":"check_completed","details":{"route":"POST /fraud/checks"}}
 {"event_id":"E-T1-077-05","timestamp":"2026-11-23T14:00:25Z","request_id":"traffic-1-077","service":"Inventory Service","event_type":"reservation_completed","details":{"route":"POST /orders"}}
+{"event_id":"E14","timestamp":"2026-11-23T14:00:25Z","request_id":"request-102","service":"Order Service","event_type":"downstream_timeout","details":{"downstream_service":"Inventory Service","route":"POST /orders","timeout_ms":30000}}
 {"event_id":"E11401","timestamp":"2026-11-23T14:00:26Z","request_id":"background-1-14","service":"API Gateway","event_type":"request_received","details":{"route":"POST /orders"}}
 {"event_id":"E-T1-077-06","timestamp":"2026-11-23T14:00:26Z","request_id":"traffic-1-077","service":"Payment Service","event_type":"authorization_completed","details":{"route":"POST /payments/authorize"}}
 {"event_id":"E11402","timestamp":"2026-11-23T14:00:27Z","request_id":"background-1-14","service":"Order Service","event_type":"request_received","details":{"route":"POST /orders"}}

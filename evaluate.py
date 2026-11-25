@@ -67,6 +67,68 @@ CASES = [
             ("read_logs", INV), ("check_endpoint_status", INV),
         ],
     },
+    {
+        "name": "Gateway timed out, Order left no record (HTTP 504)",
+        "folder": "tests/fixtures/gateway_order_timeout",
+        "request_id": "request-400",
+        "outcome": "insufficient_evidence",
+        "citations": ["E41"],
+        "fields": {
+            "next_record": "An Order Service event for request request-400 showing how it handled the request.",
+        },
+        "tool_calls": [("read_logs", GW), ("inspect_dependencies", GW), ("read_logs", ORDER)],
+    },
+    {
+        "name": "Timeouts down the whole chain (HTTP 504)",
+        "folder": "tests/fixtures/full_chain_outage",
+        "request_id": "request-500",
+        "outcome": "inventory_failure",
+        "citations": ["E52", "HC50", "E50", "E51"],
+        "fields": {"likely_failure_location": INV},
+        "tool_calls": [
+            ("read_logs", GW), ("inspect_dependencies", GW), ("read_logs", ORDER),
+            ("inspect_dependencies", ORDER), ("read_logs", INV), ("check_endpoint_status", INV),
+        ],
+    },
+    {
+        "name": "Probes at the edge of the 300 s window",
+        "folder": "tests/fixtures/window_boundary",
+        "request_id": "request-700",
+        "outcome": "inventory_failure",
+        "citations": ["HC70", "E71", "E70", "HC71"],
+        "fields": {"likely_failure_location": INV},
+        "tool_calls": [
+            ("read_logs", GW), ("read_logs", ORDER), ("inspect_dependencies", ORDER),
+            ("read_logs", INV), ("check_endpoint_status", INV),
+        ],
+    },
+    # The next two must raise evidence warnings, so verification is expected to fail.
+    # They are left out of the live Ollama run, which treats any warning as a failure.
+    {
+        "name": "Route map disagrees with the logs",
+        "folder": "tests/fixtures/route_mismatch",
+        "request_id": "request-600",
+        "outcome": "inventory_failure",
+        "citations": ["E61", "E60"],
+        "fields": {},
+        "tool_calls": [
+            ("read_logs", GW), ("read_logs", ORDER), ("inspect_dependencies", ORDER),
+            ("read_logs", INV), ("check_endpoint_status", INV),
+        ],
+        "warnings": True,
+        "llm": False,
+    },
+    {
+        "name": "Corrupt and invalid log lines (HTTP 400)",
+        "folder": "tests/fixtures/noisy_logs",
+        "request_id": "request-800",
+        "outcome": "invalid_request",
+        "citations": ["E80"],
+        "fields": {"invalid_field": "quantity"},
+        "tool_calls": [("read_logs", GW)],
+        "warnings": True,
+        "llm": False,
+    },
 ]
 
 EXPECTED_REPLAY = {
@@ -94,7 +156,9 @@ def check_case(case):
     calls = [(call["tool"], call.get("service")) for call in report["tool_trace"]]
     if calls != case["tool_calls"]:
         problems.append(f"tool calls {calls}, expected {case['tool_calls']}")
-    if report["warnings"]:
+    if case.get("warnings") and not report["warnings"]:
+        problems.append("expected evidence warnings, got none")
+    if not case.get("warnings") and report["warnings"]:
         problems.append(f"unexpected warnings {report['warnings']}")
     return report, problems
 
@@ -178,7 +242,7 @@ def main():
     lines.extend(f"|  ↳ {problem} | | | | |" for problem in problems)
 
     if llm_model:
-        for case in CASES:
+        for case in (case for case in CASES if case.get("llm", True)):
             report, problems = check_llm_case(case, llm_model)
             add_incident_result(case, report, problems, llm_model)
 
