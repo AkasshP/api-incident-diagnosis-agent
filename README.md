@@ -1,20 +1,32 @@
 # API Incident Diagnosis Agent
 
-A small Python CLI for answering a practical question after a failed API request: where did it go wrong, and what evidence do we have? Give it an incident folder and a request ID. It follows that request through the saved logs, cites what it finds, and tells you which record to look for next if the trail goes cold.
+A Python agent that investigates failed order requests from saved logs and simulated service data. It follows a request ID through Gateway, Order, and Inventory, cites the records that support its conclusion, and names the next record to look for when evidence is missing. Run the agent from the terminal or follow its decisions in the Streamlit dashboard.
 
 Built by Ramya Karuthappandian and Akassh Paramasivan as a four-week project.
 
 ## Student walkthrough
 
-The project answers one question: **what can we prove about a failed order?** Start with the dashboard to see one request end to end, then match the trace to the code.
+Start with the saved fixtures to verify the three required cases. Use Streamlit to show how the same investigation looks with a clickable trace.
 
-### Verify the demo
+### Verify the saved incidents
+
+With Ollama running and `qwen3:8b` installed, use:
+
+```sh
+python3 llm_agent.py incidents/invalid_request request-100
+python3 llm_agent.py incidents/service_outage request-200
+python3 llm_agent.py incidents/insufficient_evidence request-123
+```
+
+Check the outcome and citations against the [expected reports](#what-the-diagnosis-looks-like). In each report, inspect `tool_trace` for the reads and `verification.verified` for the independent evidence check.
+
+### Show the same cases in Streamlit
 
 1. Follow the [dashboard setup](#open-the-streamlit-dashboard). Choose **Invalid request**, click **Send request**, then click **Investigate**. Expect HTTP 400, a Gateway log lookup, and a verified diagnosis that names the missing `item_id`.
 2. Switch to **Inventory outage** and send another request. Expect HTTP 504. Click a tool node in the trace and check that the Order logs show a timeout and the Inventory logs show a handler error for the same request. The report should identify Inventory as the likely failure location.
 3. Choose **Missing Inventory evidence** and repeat. Expect HTTP 504 and `insufficient_evidence`. The report should ask for an Inventory handler record. **Verified** here means the verifier confirmed what the available evidence supports, including that the failure location is still unknown.
 
-The dashboard creates a fresh request ID and evidence records each time. To check the fixed evidence IDs used in grading, run:
+The dashboard creates a fresh request ID and evidence records each time. The evaluator uses the fixed IDs in the saved fixtures:
 
 ```sh
 python3 evaluate.py --llm
@@ -31,13 +43,13 @@ Expect **9/9 evaluation checks** and **9 regression tests** to pass.
 
 ## How a request moves through the system
 
-The API Gateway validates `POST /orders` and forwards it to the Order Service. Order asks the Inventory Service to reserve stock. The agent investigates these three fictional services by reading saved files locally.
+In the simulated system, API Gateway validates `POST /orders`, Order Service handles the request, and Inventory Service reserves stock. The three services are represented by saved evidence. The Streamlit demo can also generate fresh evidence by sending a request to a local simulator.
 
 The agent starts with the Gateway logs. A validation error with a missing field is enough to explain the rejection. For a timeout, the agent checks the route map and follows the call recorded in the logs, looking for the same request ID in the downstream service. An Order-to-Inventory timeout also prompts a lookup for nearby readiness checks. Each readiness timeout describes what the probe observed from its own vantage point.
 
 ## What the diagnosis looks like
 
-Each report includes a short timeline with evidence IDs and a trace of the files the agent consulted. These are the three demo cases.
+Each report includes a short timeline with evidence IDs and a trace of the files the agent consulted. These are the expected results for the saved fixtures.
 
 | Demo | Expected report |
 |---|---|
@@ -64,7 +76,7 @@ ollama pull qwen3:8b
 python3 llm_agent.py incidents/service_outage request-200
 ```
 
-The architecture diagram above is the reference for the primary agent path. The CLI validates the incident folder, request ID, model tag, and health window before contacting Ollama. Each decision records the selected action, arguments, reason, and tool result or error. Tool arguments can be corrected on the next turn. Repeated calls are sent back to the prior observation, transient model requests get up to two attempts per turn, and the investigation is limited to 12 decisions.
+The diagram shows the investigation flow. The current model is `qwen3:8b`, as configured in `config.json`. The CLI validates the incident folder, request ID, model tag, and health window before contacting Ollama. Each decision records the selected action, arguments, reason, and tool result or error. Tool arguments can be corrected on the next turn. Repeated calls are sent back to the prior observation, transient model requests get up to two attempts per turn, and the investigation is limited to 12 decisions.
 
 A finish is accepted once the observations cover the evidence needed for the proposed outcome. The report builder uses those observations to generate the summary, timeline, and citations. An independent rule-based check then rereads the incident folder and compares the report with the saved evidence. See `verification.verified` and `verification.problems`. An unverified report still prints as JSON and exits with status 1. The defaults are in `config.json`. Use `--model` to select another installed Ollama model.
 
@@ -151,87 +163,18 @@ If the only matching record is the Order timeout, the diagnosis looks like this.
 }
 ```
 
-### Run the Telemetry Advisor
+### Optional offline replay
+
+The Telemetry Advisor is an optional command in the rule-based CLI. It compares which single extra observation would distinguish two saved scenarios. In the included replay, `handler_entered` scores 1, while the Gateway timeout and readiness check each score 0.
 
 ```sh
 python3 -m support.agent advisor incidents/insufficient_evidence request-123 support/replay/replay.json \
   --missing-observation inventory_handler_entry --budget 1
 ```
 
-If Order timed out and the evidence leaves Inventory handler entry unresolved, the advisor compares what one extra event would reveal across saved scenarios. It returns the original diagnosis alongside the replay results. Keep replay data in its own file with these two fields.
+## Team contributions
 
-- `candidates` contains objects with `event_name`, `instrumentation_location`, and `expected_benefit`.
-- `scenarios` contains objects with a unique `id`, a `visible_records` array, and a `candidate_records` object. Map every candidate name to an array of records that candidate would expose in the scenario. Use an empty array when it emits nothing.
-- Use comparable record objects across scenarios. Omit scenario-specific metadata such as synthetic IDs and timestamps unless it represents a difference the investigator could use. For each candidate, compare its projected records only across pairs with identical baseline records. Every pair the candidate separates adds one point. Candidates are scored independently under the one-event budget.
+- **Akassh Paramasivan** implemented the baseline CLI and evidence tools, hardened the agent's input validation, retry limits, finish checks, report generation, and verifier, and built the Streamlit dashboard with demo and custom requests, request history, a clickable investigation trace, and a cited evidence timeline.
+- **Ramya Karuthappandian** built the saved incident bundles, evidence-removal fixture, offline replay data, and evaluator. She also implemented the first Ollama investigation loop and created the original architecture diagram.
 
-With two sample scenarios that share the same visible timeout, an extra Gateway timeout and basic readiness check each score 0 if their records are identical in both scenarios. A request-correlated `handler_entered` event scores 1 if only the scenario that reaches Inventory emits it. This excerpt comes from a run with the saved replay scenarios.
-
-```json
-{
-  "baseline_indistinguishable_pairs": 1,
-  "recommended_events": ["handler_entered"],
-  "top_score_ties": []
-}
-```
-
-The full output includes candidate scores, instrumentation locations, expected benefits, and remaining uncertainty. Replay assumes candidate events would be observed reliably. It cannot establish what happened in the original incident.
-
-## TODOs by owner
-
-### Akassh Paramasivan — Agent implementation
-
-#### CLI and evidence tools
-
-- [x] Add CLI arguments for the incident folder and request ID.
-- [x] Implement read-only log, dependency map, and health-check readers.
-- [x] Filter request events by request ID and service, and health checks by service and incident-time window.
-
-#### Investigation and reporting
-
-- [x] Implement evidence-driven tool selection for validation errors, downstream timeouts, and missing records.
-- [x] Build the report with outcome, likely failure location or invalid field, timeline, citations, and tool trace.
-- [x] Handle missing or unreadable evidence and document the command for running the finished CLI locally.
-
-#### Demo integration
-
-- [x] Run the CLI against Ramya's fixtures and resolve any file schema, route, or event-name mismatches.
-- [x] Add a recent failed-request list that shows route, HTTP status, and request ID. Selecting a row should open the matching evidence bundle. Keep the existing CLI arguments available.
-
-#### Telemetry Advisor and offline replay
-
-- [x] Add an optional advisor command for an unresolved Order-to-Inventory timeout. Pass in the missing observation and a one-event budget.
-- [x] Build an offline replay runner that reads Ramya's saved scenarios and projects the records each candidate event would expose.
-- [x] Score each candidate by the number of previously indistinguishable scenario pairs it separates. Report the score and any ties.
-- [x] Print the candidate's event name, instrumentation location, expected benefit, and remaining uncertainty. Keep the original incident diagnosis unresolved.
-- [x] Verify the documented diagnosis and advisor sample outputs against Ramya's fixtures after integration.
-
-### Ramya Karuthappandian — Incident evidence and evaluation
-
-#### Service map and diagnosis fixtures
-
-- [ ] Verify the Gateway, Order, and Inventory route map against the CLI's supported schema and document the shared event fields.
-- [ ] Create the HTTP 400 fixture with Gateway event `E11` identifying a missing `item_id`.
-- [ ] Create the HTTP 504 outage fixture with Order timeout `E21`, matching Inventory handler error `E22`, and readiness timeouts `HC17` and `HC18`.
-- [ ] Create the HTTP 504 insufficient-evidence fixture with an Order-to-Inventory timeout and no matching Inventory event or relevant readiness check.
-- [ ] Include an unrelated request event and a stale readiness check to verify request and time filtering.
-
-#### Offline replay fixtures
-
-- [ ] Create two synthetic scenarios with identical visible timeout logs. In one, the request never enters Inventory. In the other, the handler starts and a response never reaches Order.
-- [ ] Define candidate observations for an extra Gateway timeout log, a basic readiness check, and Inventory's request-correlated `handler_entered` event.
-- [ ] Save simulator ground truth and candidate observations separately from the request evidence. Document the assumption that replay observes candidate events reliably.
-
-#### Evaluation and results
-
-- [ ] Define expected outcomes, supported evidence citations, and expected tool calls for the three required incidents.
-- [ ] Evaluate that the invalid request stops at Gateway and the missing-evidence case reports the attempted Inventory call without claiming handler entry.
-- [ ] Remove `E22`, `HC17`, and `HC18` from a copy of the outage fixture. Verify the diagnosis changes to insufficient evidence while still citing `E21`.
-- [ ] Verify the two replay cases look identical with existing observations and that `handler_entered` separates them in replay. Record actual candidate scores and any mismatches.
-
-### Shared — Integration and delivery
-
-- [ ] **Week 1** — Review the architecture and agree on filenames, event types, evidence IDs, and report format.
-- [ ] **Week 2** — Integrate the three diagnosis fixtures and verify the CLI can run all cases locally.
-- [ ] **Week 3** — Run the evaluator, evidence-removal test, and offline replay. Review each other's work and record expected versus actual results.
-- [ ] **Week 4** — Update the README and sequence diagram, rehearse the three required demo cases and optional advisor follow-up, and publish the runnable repository and evaluation results.
-- [ ] Add individual entries to `support/CONTRIBUTIONS.md` describing completed work and linking to relevant files or commits.
+See [individual contributions](support/CONTRIBUTIONS.md) and the [recorded evaluation](results/evaluation_results.json).
