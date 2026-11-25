@@ -4,13 +4,31 @@ A Python agent that investigates failed order requests from saved logs and simul
 
 Built by Ramya Karuthappandian and Akassh Paramasivan as a four-week project.
 
-## Student walkthrough
+## 1. Set up the project
 
-Start with the saved fixtures to verify the three required cases. Use Streamlit to show how the same investigation looks with a clickable trace.
+If you already have the repository, open it in your terminal and start with Ollama setup. Otherwise, clone it:
 
-### Verify the saved incidents
+```sh
+git clone https://github.com/AkasshP/api-incident-diagnosis-agent.git
+cd api-incident-diagnosis-agent
+```
 
-With Ollama running and `qwen3:8b` installed, use:
+Run all remaining commands from the repository root. Python 3.11 or later is recommended. The CLI, evaluator, and regression tests use the Python standard library. The Streamlit dashboard adds the dependency listed in [requirements.txt](requirements.txt).
+
+Install [Ollama](https://ollama.com/) if needed. If no Ollama server is running, start it in a separate terminal:
+
+```sh
+ollama serve
+```
+
+From the repository terminal, download the model and confirm it appears in the installed list:
+
+```sh
+ollama pull qwen3:8b
+ollama list
+```
+
+## 2. Run the three saved incidents
 
 ```sh
 python3 llm_agent.py incidents/invalid_request request-100
@@ -18,90 +36,58 @@ python3 llm_agent.py incidents/service_outage request-200
 python3 llm_agent.py incidents/insufficient_evidence request-123
 ```
 
-Check the outcome and citations against the [expected reports](#what-the-diagnosis-looks-like). In each report, inspect `tool_trace` for the reads and `verification.verified` for the independent evidence check.
+Each linked fixture already contains the request logs, dependency map, and saved health checks.
 
-### Show the same cases in Streamlit
+| Saved incident | Request ID | Expected result |
+|---|---|---|
+| [Invalid request · HTTP 400](incidents/invalid_request/) | `request-100` | `invalid_request`. Gateway event `E11` identifies the missing `item_id`. The agent can finish at Gateway. |
+| [Inventory outage · HTTP 504](incidents/service_outage/) | `request-200` | `inventory_failure`. Order timeout `E21` and matching Inventory handler error `E22` point to Inventory as the likely failure location. Nearby probes `HC17` and `HC18` provide context. |
+| [Insufficient evidence · HTTP 504](incidents/insufficient_evidence/) | `request-123` | `insufficient_evidence`. `E31` confirms the Order timeout. The agent asks for a matching Inventory handler event. |
 
-1. Follow the [dashboard setup](#open-the-streamlit-dashboard). Choose **Invalid request**, click **Send request**, then click **Investigate**. Expect HTTP 400, a Gateway log lookup, and a verified diagnosis that names the missing `item_id`.
-2. Switch to **Inventory outage** and send another request. Expect HTTP 504. Click a tool node in the trace and check that the Order logs show a timeout and the Inventory logs show a handler error for the same request. The report should identify Inventory as the likely failure location.
-3. Choose **Missing Inventory evidence** and repeat. Expect HTTP 504 and `insufficient_evidence`. The report should ask for an Inventory handler record. **Verified** here means the verifier confirmed what the available evidence supports, including that the failure location is still unknown.
+The terminal shows decisions as they happen, followed by the JSON report. Check `outcome`, `citations`, and `verification.verified`. For the third case, `verified: true` confirms that the available evidence supports leaving the failure location unresolved.
 
-The dashboard creates a fresh request ID and evidence records each time. The evaluator uses the fixed IDs in the saved fixtures:
+## 3. Open the Streamlit dashboard
 
-```sh
-python3 evaluate.py --llm
-python3 -m unittest discover -v
-```
-
-Expect **9/9 evaluation checks** and **9 regression tests** to pass.
-
-### Follow one request through the code
-
-1. **Send the request.** [`streamlit_app.py`](streamlit_app.py) calls [`dashboard/http_client.py`](dashboard/http_client.py). The local demo in [`dashboard/orders_api.py`](dashboard/orders_api.py) returns an HTTP response and saves its evidence under the same request ID.
-2. **Decide what to read.** Start at `investigate()` in [`llm_agent.py`](llm_agent.py). It validates the input, asks Ollama for one action, runs that action, and gives the result back to the model. [`tools.py`](tools.py) reads the saved evidence. [`guardrails.py`](guardrails.py) rejects invalid tool arguments and finishes that need more evidence.
-3. **Build and check the report.** [`report_builder.py`](report_builder.py) builds the timeline and cites records the agent actually read. [`verifier.py`](verifier.py) reads the saved bundle again and checks the outcome, citations, timeline, and next record. If the checks disagree, it returns `verified: false` with an explanation.
-
-## How a request moves through the system
-
-In the simulated system, API Gateway validates `POST /orders`, Order Service handles the request, and Inventory Service reserves stock. The three services are represented by saved evidence. The Streamlit demo can also generate fresh evidence by sending a request to a local simulator.
-
-The agent starts with the Gateway logs. A validation error with a missing field is enough to explain the rejection. For a timeout, the agent checks the route map and follows the call recorded in the logs, looking for the same request ID in the downstream service. An Order-to-Inventory timeout also prompts a lookup for nearby readiness checks. Each readiness timeout describes what the probe observed from its own vantage point.
-
-## What the diagnosis looks like
-
-Each report includes a short timeline with evidence IDs and a trace of the files the agent consulted. These are the expected results for the saved fixtures.
-
-| Demo | Expected report |
-|---|---|
-| Invalid request · HTTP 400 | Missing `item_id`. Cite Gateway validation event `E11` and finish without a downstream lookup. |
-| Inventory outage · HTTP 504 | Inventory is the likely failure location. Cite Order's call timeout `E21` and Inventory's matching handler error `E22`. Cite readiness timeouts `HC17` and `HC18` as supporting observations. The underlying cause remains undetermined. |
-| Insufficient evidence · HTTP 504 | Order timed out waiting for Inventory. Cite `E31` and request an Inventory-side event for the same request. |
-
-## Run locally
-
-Use Python 3.9 or later. The CLI prints a JSON report and uses only the standard library.
+Optional. Keep Ollama running. On macOS or Linux, create and activate a virtual environment, then install Streamlit and start the dashboard. If your environment is already active, start at the install command.
 
 ```sh
-python3 -m support.agent path/to/incident request-123 --health-window-seconds 300
-```
-
-### Run the LLM agent
-
-`llm_agent.py` uses a free local model through [Ollama](https://ollama.com). The model decides which tool to call at each step, when to stop, and what the outcome is. It prints each decision and its reason as it goes.
-
-![LLM agent architecture: decision loop, guardrails, report builder, and independent verification](docs/diagrams/architecture.png)
-
-```sh
-ollama pull qwen3:8b
-python3 llm_agent.py incidents/service_outage request-200
-```
-
-The diagram shows the investigation flow. The current model is `qwen3:8b`, as configured in `config.json`. The CLI validates the incident folder, request ID, model tag, and health window before contacting Ollama. Each decision records the selected action, arguments, reason, and tool result or error. Tool arguments can be corrected on the next turn. Repeated calls are sent back to the prior observation, transient model requests get up to two attempts per turn, and the investigation is limited to 12 decisions.
-
-A finish is accepted once the observations cover the evidence needed for the proposed outcome. The report builder uses those observations to generate the summary, timeline, and citations. An independent rule-based check then rereads the incident folder and compares the report with the saved evidence. See `verification.verified` and `verification.problems`. An unverified report still prints as JSON and exits with status 1. The defaults are in `config.json`. Use `--model` to select another installed Ollama model.
-
-### Open the Streamlit dashboard
-
-With Ollama running and `qwen3:8b` installed, run:
-
-```sh
+python3 -m venv .venv
+source .venv/bin/activate
 python3 -m pip install -r requirements.txt
 python3 -m streamlit run streamlit_app.py
 ```
 
-Open [the local dashboard](http://127.0.0.1:8501). Choose **Demo API** for the sample scenarios or **Custom endpoint** to paste a URL and choose a method. Then click **Send request**. The console shows response status, latency, request ID, and body. It keeps request history for the current browser session.
+Open the dashboard at [localhost:8501](http://127.0.0.1:8501). Select **Demo API**, pick a scenario, and click **Send request**. For a failed response, click **Investigate**. Select a trace node to see the tool arguments and returned records. Open **Cited evidence** to review the timeline.
 
-The local demo saves an evidence bundle automatically. For your own endpoint, provide a local incident folder and the request ID. A request ID from the response header or JSON body is filled in when available. Click **Investigate** to run the same Ollama agent as the CLI. The trace shows how many evidence tools ran, which decisions were rejected or retried, what each tool returned, and whether independent verification passed. Click a trace node to see its details, or open **Cited evidence** to review the timeline.
+The demo API generates new request and evidence IDs for each run. For a custom endpoint, supply a local evidence folder and a matching request ID to investigate a failure.
 
-### Run the evaluation
+## 4. Run the tests and evaluator
 
 ```sh
-python3 evaluate.py        # rule-based agent and replay advisor
-python3 evaluate.py --llm --json-output results/evaluation_results.json
 python3 -m unittest discover -v
+python3 evaluate.py
+python3 evaluate.py --llm
 ```
 
+The first command runs nine regression tests. The second runs five baseline checks without Ollama. The third runs nine checks, including four live Ollama cases. The [evidence-removal fixture](tests/fixtures/outage_evidence_removed/) checks that the diagnosis returns to insufficient evidence when the Inventory handler error and readiness timeouts are removed. See the [recorded evaluation](results/evaluation_results.json).
+
+## How the agent works
+
+API Gateway validates `POST /orders`, Order Service handles the request, and Inventory Service reserves stock. The project represents these services through saved evidence. Streamlit can also send requests to a local simulator that produces fresh evidence for the same workflow.
+
+1. [`llm_agent.py`](llm_agent.py) validates the incident folder and request ID, then asks Ollama for an action.
+2. [`tools.py`](tools.py) reads the requested evidence. The result or error goes back to the model. [`guardrails.py`](guardrails.py) checks tool arguments and rejects a finish if more evidence is needed or the proposed outcome is unsupported.
+3. [`report_builder.py`](report_builder.py) builds the timeline and citations from observed records. [`verifier.py`](verifier.py) rereads the saved files and checks the report. An unverified CLI run prints reasons in `verification.problems` and exits with status 1.
+
+![Architecture diagram showing the investigation loop, guardrails, report building, and verification](docs/diagrams/architecture.png)
+
+The diagram shows the investigation flow. The running model defaults to `qwen3:8b` in [config.json](config.json). Use `--model` to select a different installed Ollama model.
+
 ## Repository layout
+
+Start with [`investigate()`](llm_agent.py#L87) to follow one request through the agent. The loop calls the evidence readers in [`tools.py`](tools.py), validates proposed actions and finishes in [`guardrails.py`](guardrails.py), and builds the report from observed records in [`report_builder.py`](report_builder.py). [`verifier.py`](verifier.py) checks the report against a fresh read of the saved bundle.
+
+The terminal and Streamlit dashboard call the same investigation function. [`tests/test_llm_agent.py`](tests/test_llm_agent.py) exercises the loop with controlled model replies, so students can trace a rejected finish or retry without running Ollama.
 
 | Path | Purpose |
 |---|---|
@@ -114,8 +100,11 @@ python3 -m unittest discover -v
 | `incidents/` | Service outage, invalid request, and insufficient-evidence bundles |
 | `evaluate.py`, `tests/`, `results/` | Evaluation, regression checks and evidence-removal fixture, and recorded results |
 | `docs/diagrams/architecture.png` | Final architecture diagram |
-| `streamlit_app.py`, `dashboard/` | Local dashboard, HTTP client, and demo endpoint |
+| `streamlit_app.py` | Streamlit request form and investigation controls |
+| `dashboard/` | HTTP client, demo endpoint, and response and trace views |
 | `support/` | Baseline CLI, recent-request manifest, Telemetry Advisor, and team contributions |
+
+## Evidence file formats
 
 Point the CLI at a folder containing the evidence files below. Use timezone-aware ISO 8601 timestamps such as `2026-11-23T14:00:00Z`. By default, a health check can be up to five minutes before or after the Order timeout.
 
@@ -129,39 +118,16 @@ For Gateway validation, use `event_type: validation_error` with `details.missing
 
 The report's `outcome` is `invalid_request`, `inventory_failure`, or `insufficient_evidence`. Each timeline entry names its evidence ID, and `tool_trace` records the calls in execution order. Unresolved reports include `next_record`. Read and parse failures appear in `warnings` alongside any diagnosis the available evidence supports.
 
-### Browse recent failed requests
+## Optional CLI commands
+
+The rule-based CLI and recent-request browser run without Ollama:
 
 ```sh
-python3 -m support.agent recent support/recent.json
+python3 -m support.agent incidents/insufficient_evidence request-123
 python3 -m support.agent recent support/recent.json --select 1
 ```
 
-The first command lists rows newest first and prompts for a row in an interactive terminal. The second opens that row's evidence bundle directly and prints its diagnosis. Paths in `incident_folder` are relative to the manifest directory unless absolute. Supply the request's actual HTTP status in the manifest.
-
-```json
-{
-  "requests": [
-    {
-      "timestamp": "2026-11-23T14:00:00Z",
-      "route": "POST /orders",
-      "http_status": 504,
-      "request_id": "request-123",
-      "incident_folder": "../incidents/insufficient_evidence"
-    }
-  ]
-}
-```
-
-If the only matching record is the Order timeout, the diagnosis looks like this.
-
-```json
-{
-  "outcome": "insufficient_evidence",
-  "summary": "Order Service timed out waiting for Inventory Service.",
-  "next_record": "An Inventory Service handler event for request request-123.",
-  "citations": ["E31"]
-}
-```
+The recent-request command selects the newest saved request with `--select 1`. Manifest paths are relative to the manifest directory.
 
 ### Optional offline replay
 
