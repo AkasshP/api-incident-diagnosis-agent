@@ -4,22 +4,23 @@ Usage: python3 evaluate.py            # rule-based agent and replay
        python3 evaluate.py --llm      # also the Ollama agent (optionally --llm MODEL)
 """
 
+import argparse
+import json
 import sys
 from pathlib import Path
 
-from agent import diagnose
-from demo import replay
-from evidence import Evidence
-from llm_agent import DEFAULT_MODEL, TOOLS, investigate
+from support.demo import replay
+from llm_agent import DEFAULT_MODEL, DEFAULT_WINDOW_SECONDS, investigate
+from report_builder import diagnose
+from tools import GATEWAY as GW, INVENTORY as INV, ORDER, Evidence
 
 ROOT = Path(__file__).parent
-GW, ORDER, INV = "API Gateway", "Order Service", "Inventory Service"
 
 # Each case: folder, request ID, and what a correct report must contain.
 CASES = [
     {
         "name": "Invalid request (HTTP 400)",
-        "folder": "incidents/invalid-request",
+        "folder": "incidents/invalid_request",
         "request_id": "request-100",
         "outcome": "invalid_request",
         "citations": ["E11"],
@@ -28,7 +29,7 @@ CASES = [
     },
     {
         "name": "Inventory outage (HTTP 504)",
-        "folder": "incidents/inventory-outage",
+        "folder": "incidents/service_outage",
         "request_id": "request-200",
         "outcome": "inventory_failure",
         "citations": ["HC17", "E22", "E21", "HC18"],
@@ -40,7 +41,7 @@ CASES = [
     },
     {
         "name": "Insufficient evidence (HTTP 504)",
-        "folder": "incidents/missing-inventory",
+        "folder": "incidents/insufficient_evidence",
         "request_id": "request-123",
         "outcome": "insufficient_evidence",
         "citations": ["E31"],
@@ -56,7 +57,7 @@ CASES = [
     },
     {
         "name": "Evidence removal (outage minus E22, HC17, HC18)",
-        "folder": "incidents/outage-evidence-removed",
+        "folder": "tests/fixtures/outage_evidence_removed",
         "request_id": "request-200",
         "outcome": "insufficient_evidence",
         "citations": ["E21"],
@@ -77,7 +78,7 @@ EXPECTED_REPLAY = {
 
 
 def check_case(case):
-    report = diagnose(Evidence(ROOT / case["folder"]), case["request_id"], 300)
+    report = diagnose(Evidence(ROOT / case["folder"]), case["request_id"], DEFAULT_WINDOW_SECONDS)
     problems = []
     if report["outcome"] != case["outcome"]:
         problems.append(f"outcome {report['outcome']!r}, expected {case['outcome']!r}")
@@ -95,7 +96,7 @@ def check_case(case):
 
 
 def check_replay():
-    result = replay(ROOT / "replay/replay.json", "inventory_handler_entry")
+    result = replay(ROOT / "support/replay/replay.json", "inventory_handler_entry")
     scores = {c["event_name"]: c["score"] for c in result["candidates"]}
     problems = []
     for key in ("baseline_indistinguishable_pairs", "recommended_events", "top_score_ties"):
@@ -107,30 +108,51 @@ def check_replay():
 
 
 def check_llm_case(case, model):
-    report = investigate(ROOT / case["folder"], case["request_id"], model, 300)
+    report = investigate(ROOT / case["folder"], case["request_id"], model, DEFAULT_WINDOW_SECONDS)
     problems = list(report["verification"]["problems"])
     if report["outcome"] != case["outcome"]:
         problems.append(f"outcome {report['outcome']!r}, expected {case['outcome']!r}")
     if set(report["citations"]) != set(case["citations"]):
         problems.append(f"citations {report['citations']}, expected {case['citations']}")
-    expected_services = {service for _, service in case["tool_calls"]}
-    used = {d["arguments"].get("service") for d in report["decisions"] if d.get("arguments")}
-    if used - expected_services:
-        problems.append(f"looked at services it did not need: {sorted(used - expected_services)}")
+    expected_calls = set(case["tool_calls"])
+    used = {(step["tool"], step["service"]) for step in report["tool_trace"] if "service" in step}
+    if expected_calls - used:
+        problems.append(f"missing tool calls: {sorted(expected_calls - used)}")
+    extra_services = {service for _, service in used} - {service for _, service in expected_calls}
+    if extra_services:
+        problems.append(f"looked at services it did not need: {sorted(extra_services)}")
+    for key, value in case["fields"].items():
+        if report.get(key) != value:
+            problems.append(f"{key} {report.get(key)!r}, expected {value!r}")
     return report, problems
 
 
 def main():
-    llm_model = None
-    if "--llm" in sys.argv:
-        position = sys.argv.index("--llm")
-        following = sys.argv[position + 1:position + 2]
-        llm_model = following[0] if following and not following[0].startswith("-") else DEFAULT_MODEL
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--llm", nargs="?", const=DEFAULT_MODEL, metavar="MODEL",
+                        help="also evaluate the Ollama agent")
+    parser.add_argument("--json-output", type=Path, help="write structured evaluation results")
+    args = parser.parse_args()
+    llm_model = args.llm
     lines = ["| Case | Expected | Actual | Citations | Result |", "|---|---|---|---|---|"]
-    failures = 0
+    results = []
+
+    def save_case(case, report, problems, model=None):
+        results.append({
+            "case": case["name"],
+            "mode": "ollama" if model else "rules",
+            "model": model,
+            "expected": case["outcome"],
+            "actual": report["outcome"],
+            "citations": report["citations"],
+            "tool_calls": len(report["tool_trace"]),
+            "passed": not problems,
+            "problems": problems,
+        })
+
     for case in CASES:
         report, problems = check_case(case)
-        failures += bool(problems)
+        save_case(case, report, problems)
         lines.append(
             f"| {case['name']} | {case['outcome']} | {report['outcome']} | "
             f"{', '.join(report['citations'])} | {'FAIL' if problems else 'PASS'} |"
@@ -138,7 +160,13 @@ def main():
         lines.extend(f"|  ↳ {problem} | | | | |" for problem in problems)
 
     scores, problems = check_replay()
-    failures += bool(problems)
+    results.append({
+        "case": "Advisor replay",
+        "mode": "replay",
+        "scores": scores,
+        "passed": not problems,
+        "problems": problems,
+    })
     score_text = ", ".join(f"{name} {score}" for name, score in scores.items())
     lines.append(
         f"| Advisor replay | handler_entered recommended | {score_text} | — | "
@@ -146,22 +174,26 @@ def main():
     )
     lines.extend(f"|  ↳ {problem} | | | | |" for problem in problems)
 
-    total = len(CASES) + 1
     if llm_model:
         for case in CASES:
             report, problems = check_llm_case(case, llm_model)
-            failures += bool(problems)
-            steps = sum(1 for d in report["decisions"] if d.get("action") in TOOLS)
+            save_case(case, report, problems, llm_model)
+            steps = len(report["tool_trace"])
             lines.append(
                 f"| LLM ({llm_model}): {case['name']} | {case['outcome']} | {report['outcome']} | "
                 f"{', '.join(report['citations'])} ({steps} tool calls) | {'FAIL' if problems else 'PASS'} |"
             )
             lines.extend(f"|  ↳ {problem} | | | | |" for problem in problems)
-        total += len(CASES)
 
     print("\n".join(lines))
-    print(f"\n{total - failures}/{total} checks passed.")
-    return 1 if failures else 0
+    passed = sum(case["passed"] for case in results)
+    total = len(results)
+    print(f"\n{passed}/{total} checks passed.")
+    if args.json_output:
+        args.json_output.parent.mkdir(parents=True, exist_ok=True)
+        payload = {"passed": passed, "total": total, "cases": results}
+        args.json_output.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    return 0 if passed == total else 1
 
 
 if __name__ == "__main__":

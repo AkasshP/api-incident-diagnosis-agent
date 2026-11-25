@@ -6,7 +6,7 @@ import sys
 from itertools import combinations
 from pathlib import Path
 
-from evidence import utc_time
+from tools import utc_time
 
 
 def read_object(path):
@@ -32,7 +32,7 @@ def required_text(row, key):
 
 
 def recent_parser():
-    parser = argparse.ArgumentParser(prog="agent.py recent", description="Browse saved failed requests.")
+    parser = argparse.ArgumentParser(prog="python3 -m support.agent recent", description="Browse saved failed requests.")
     parser.add_argument("manifest", type=Path)
     parser.add_argument("--select", type=int, metavar="ROW")
     return parser
@@ -68,7 +68,7 @@ def select_recent(manifest, selection):
 
 
 def advisor_parser():
-    parser = argparse.ArgumentParser(prog="agent.py advisor", description="Compare candidate telemetry offline.")
+    parser = argparse.ArgumentParser(prog="python3 -m support.agent advisor", description="Compare candidate telemetry offline.")
     parser.add_argument("incident_folder", type=Path)
     parser.add_argument("request_id")
     parser.add_argument("replay_file", type=Path)

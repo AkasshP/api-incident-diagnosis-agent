@@ -5,6 +5,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+GATEWAY = "API Gateway"
+ORDER = "Order Service"
+INVENTORY = "Inventory Service"
+
+
 def service_key(name):
     return str(name).strip().casefold().replace("-", " ").replace("_", " ")
 
@@ -56,9 +61,20 @@ class Evidence:
 
     def read_logs(self, request_id, service):
         self.trace.append({"tool": "read_logs", "request_id": request_id, "service": service})
+        return self._request_events(request_id, service)
+
+    def read_recent_errors(self, request_id):
+        self.trace.append({"tool": "read_recent_errors", "request_id": request_id})
+        events = self._request_events(request_id)
+        failures = {"validation_error", "downstream_timeout", "handler_error"}
+        return [row for row in reversed(events) if row["event_type"] in failures][:5]
+
+    def _request_events(self, request_id, service=None):
         matches = []
         for row in self._read("logs.jsonl") or []:
-            if row.get("request_id") != request_id or service_key(row.get("service")) != service_key(service):
+            if row.get("request_id") != request_id:
+                continue
+            if service is not None and service_key(row.get("service")) != service_key(service):
                 continue
             if (
                 not isinstance(row.get("event_id"), str)
@@ -67,7 +83,9 @@ class Evidence:
                 or not isinstance(row.get("event_type"), str)
                 or not isinstance(row.get("details", {}), dict)
             ):
-                self.warnings.append(f"logs.jsonl: invalid event for {service} and request {request_id}")
+                self.warnings.append(
+                    f"logs.jsonl: invalid event for {row.get('service')} and request {request_id}"
+                )
                 continue
             matches.append(row)
         return sorted(matches, key=lambda row: utc_time(row["timestamp"]))
@@ -110,3 +128,43 @@ class Evidence:
             if abs((checked_at - reference).total_seconds()) <= window_seconds:
                 observations.append(row)
         return sorted(observations, key=lambda row: utc_time(row["checked_at"]))
+
+
+SERVICES = (GATEWAY, ORDER, INVENTORY)
+TOOL_ARGUMENTS = {
+    "read_recent_errors": (),
+    "read_logs": ("service",),
+    "inspect_dependencies": ("service", "route"),
+    "check_endpoint_status": ("service", "incident_time"),
+}
+TOOLS = tuple(TOOL_ARGUMENTS)
+
+def observation_key(action, arguments):
+    value = arguments.get("route")
+    if action == "check_endpoint_status":
+        value = utc_time(arguments["incident_time"])
+    return action, arguments.get("service"), value
+
+
+def run_tool(evidence, request_id, window_seconds, action, arguments, observations):
+    key = observation_key(action, arguments)
+    if key in observations.results:
+        raise ValueError("This tool call already completed. Use its earlier result.")
+    commands = {
+        "read_recent_errors": evidence.read_recent_errors,
+        "read_logs": evidence.read_logs,
+        "inspect_dependencies": evidence.inspect_dependencies,
+        "check_endpoint_status": evidence.check_endpoint_status,
+    }
+    tool_args = dict(arguments)
+    if action in ("read_logs", "read_recent_errors"):
+        tool_args["request_id"] = request_id
+    elif action == "check_endpoint_status":
+        tool_args["window_seconds"] = window_seconds
+    warning_offset = len(evidence.warnings)
+    data = commands[action](**tool_args)
+    observations.results[key] = data
+    result = {"data": data}
+    if warnings := evidence.warnings[warning_offset:]:
+        result["warnings"] = warnings
+    return result
