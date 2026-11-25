@@ -1,3 +1,5 @@
 {"event_id":"E30","timestamp":"2026-11-23T14:00:00Z","request_id":"request-123","service":"API Gateway","event_type":"request_received","details":{"route":"POST /orders"}}
 {"event_id":"E31","timestamp":"2026-11-23T14:00:30Z","request_id":"request-123","service":"Order Service","event_type":"downstream_timeout","details":{"downstream_service":"Inventory Service","route":"POST /orders","timeout_ms":30000}}
 {"event_id":"E39","timestamp":"2026-11-23T14:00:35Z","request_id":"request-997","service":"Inventory Service","event_type":"handler_error","details":{"route":"POST /orders","error":"unrelated request"}}
+{"event_id":"E32","timestamp":"2026-11-23T14:00:05Z","request_id":"request-123","service":"Order Service","event_type":"order_created","details":{"route":"POST /orders","order_id":"order-55"}}
+{"event_id":"E33","timestamp":"2026-11-23T14:00:31Z","request_id":"request-124","service":"Inventory Service","event_type":"handler_error","details":{"route":"POST /orders","error":"unrelated request"}}

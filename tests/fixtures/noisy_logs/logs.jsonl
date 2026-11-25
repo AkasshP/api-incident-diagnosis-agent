@@ -1,0 +1,4 @@
+{"event_id":"E80","timestamp":"2026-11-23T19:00:00Z","request_id":"request-800","service":"API Gateway","event_type":"validation_error","details":{"route":"POST /orders","missing_field":"quantity","http_status":400}}
+{this line is not valid json
+{"timestamp":"2026-11-23T19:00:01Z","request_id":"request-800","service":"API Gateway","event_type":"validation_error","details":{"missing_field":"item_id"}}
+["not", "an", "object"]

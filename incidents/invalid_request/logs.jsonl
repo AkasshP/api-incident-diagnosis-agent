@@ -1,3 +1,6 @@
 {"event_id":"E10","timestamp":"2026-11-23T13:59:58Z","request_id":"request-100","service":"API Gateway","event_type":"request_received","details":{"route":"POST /orders"}}
 {"event_id":"E11","timestamp":"2026-11-23T14:00:00Z","request_id":"request-100","service":"API Gateway","event_type":"validation_error","details":{"route":"POST /orders","missing_field":"item_id","http_status":400}}
 {"event_id":"E12","timestamp":"2026-11-23T14:00:05Z","request_id":"request-999","service":"API Gateway","event_type":"validation_error","details":{"route":"POST /orders","missing_field":"quantity","http_status":400}}
+{"event_id":"E13","timestamp":"2026-11-23T14:00:20Z","request_id":"request-101","service":"API Gateway","event_type":"validation_error","details":{"route":"POST /orders","missing_field":"customer_id","http_status":400}}
+{"event_id":"E14","timestamp":"2026-11-23T14:00:25Z","request_id":"request-102","service":"Order Service","event_type":"downstream_timeout","details":{"downstream_service":"Inventory Service","route":"POST /orders","timeout_ms":30000}}
+{"event_id":"E15","timestamp":"2026-11-23T13:59:59Z","request_id":"request-100","service":"API Gateway","event_type":"auth_checked","details":{"route":"POST /orders","result":"allowed"}}

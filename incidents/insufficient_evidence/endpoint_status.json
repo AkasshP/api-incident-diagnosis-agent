@@ -1,4 +1,6 @@
 [
   {"check_id":"HC35","checked_at":"2026-11-23T13:30:00Z","target_service":"Inventory Service","observed_from":"Order Service","path":"/ready","result":"timeout"},
-  {"check_id":"HC36","checked_at":"2026-11-23T14:00:40Z","target_service":"Inventory Service","observed_from":"Order Service","path":"/ready","result":"ok"}
+  {"check_id":"HC36","checked_at":"2026-11-23T14:00:40Z","target_service":"Inventory Service","observed_from":"Order Service","path":"/ready","result":"ok"},
+  {"check_id":"HC37","checked_at":"2026-11-23T14:05:31Z","target_service":"Inventory Service","observed_from":"Order Service","path":"/ready","result":"timeout"},
+  {"check_id":"HC38","checked_at":"2026-11-23T14:00:45Z","target_service":"Order Service","observed_from":"API Gateway","path":"/ready","result":"timeout"}
 ]
