@@ -1,0 +1,85 @@
+[data-testid="stAppViewContainer"] {
+    background: radial-gradient(ellipse at 86% 0%, #192949 0%, #0a1020 42rem);
+}
+
+[data-testid="stMainBlockContainer"] {
+    max-width: 78rem;
+    padding-top: 2.75rem;
+    padding-bottom: 3rem;
+}
+
+[data-testid="stHeader"] {
+    background: transparent;
+}
+
+.console-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.8rem;
+    padding-bottom: 1.3rem;
+    margin-bottom: 1.7rem;
+    border-bottom: 1px solid #2a3956;
+}
+
+.console-header h1 {
+    font-size: clamp(1.9rem, 4vw, 2.8rem);
+    letter-spacing: -0.04em;
+    line-height: 1.12;
+    margin: 0;
+    padding: 0;
+}
+
+.console-header p {
+    color: #b5c3de;
+    margin: 0.45rem 0 0;
+}
+
+.console-model {
+    border: 1px solid #3c5282;
+    border-radius: 999px;
+    padding: 0.4rem 0.8rem;
+    background: #152543;
+    color: #d3e0ff;
+    font: 0.8rem ui-monospace, monospace;
+    white-space: nowrap;
+}
+
+[data-testid="stVerticalBlockBorderWrapper"] {
+    border-color: #2a3956;
+}
+
+.st-key-request_panel, .st-key-response_panel, .st-key-diagnosis_panel {
+    background: #101a2e;
+    border-radius: 0.8rem;
+}
+
+[data-testid="stMetricValue"] {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.045em;
+}
+
+.st-key-trace_nodes [data-testid="stButton"] button {
+    text-align: left;
+    justify-content: flex-start;
+    min-height: 2.45rem;
+    font-size: 0.85rem;
+}
+
+.st-key-trace_nodes [data-testid="stButton"] button p {
+    text-align: left;
+    font-size: inherit;
+}
+
+.trace-edge {
+    border-left: 1px solid #536995;
+    height: 0.8rem;
+    margin: -0.65rem 0 -0.65rem 1rem;
+}
+
+@media (max-width: 640px) {
+    [data-testid="stMainBlockContainer"] {
+        padding-top: 2rem;
+    }
+}

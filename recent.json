@@ -1,7 +1,0 @@
-{
-  "requests": [
-    {"timestamp": "2026-11-23T14:00:00Z", "route": "POST /orders", "http_status": 400, "request_id": "request-100", "incident_folder": "incidents/invalid-request"},
-    {"timestamp": "2026-11-23T14:05:00Z", "route": "POST /orders", "http_status": 504, "request_id": "request-200", "incident_folder": "incidents/inventory-outage"},
-    {"timestamp": "2026-11-23T14:10:00Z", "route": "POST /orders", "http_status": 504, "request_id": "request-123", "incident_folder": "incidents/missing-inventory"}
-  ]
-}

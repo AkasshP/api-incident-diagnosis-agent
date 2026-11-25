@@ -1,0 +1,8 @@
+{
+  "ollama_url": "http://localhost:11434/api/chat",
+  "model": "qwen3:8b",
+  "health_window_seconds": 300,
+  "max_steps": 12,
+  "max_model_attempts": 2,
+  "model_timeout_seconds": 90
+}

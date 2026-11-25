@@ -1,0 +1,127 @@
+{
+  "passed": 9,
+  "total": 9,
+  "cases": [
+    {
+      "case": "Invalid request (HTTP 400)",
+      "mode": "rules",
+      "model": null,
+      "expected": "invalid_request",
+      "actual": "invalid_request",
+      "citations": [
+        "E11"
+      ],
+      "tool_calls": 1,
+      "passed": true,
+      "problems": []
+    },
+    {
+      "case": "Inventory outage (HTTP 504)",
+      "mode": "rules",
+      "model": null,
+      "expected": "inventory_failure",
+      "actual": "inventory_failure",
+      "citations": [
+        "HC17",
+        "E22",
+        "E21",
+        "HC18"
+      ],
+      "tool_calls": 5,
+      "passed": true,
+      "problems": []
+    },
+    {
+      "case": "Insufficient evidence (HTTP 504)",
+      "mode": "rules",
+      "model": null,
+      "expected": "insufficient_evidence",
+      "actual": "insufficient_evidence",
+      "citations": [
+        "E31"
+      ],
+      "tool_calls": 5,
+      "passed": true,
+      "problems": []
+    },
+    {
+      "case": "Evidence removal (outage minus E22, HC17, HC18)",
+      "mode": "rules",
+      "model": null,
+      "expected": "insufficient_evidence",
+      "actual": "insufficient_evidence",
+      "citations": [
+        "E21"
+      ],
+      "tool_calls": 5,
+      "passed": true,
+      "problems": []
+    },
+    {
+      "case": "Advisor replay",
+      "mode": "replay",
+      "scores": {
+        "handler_entered": 1,
+        "gateway_timeout": 0,
+        "readiness_check": 0
+      },
+      "passed": true,
+      "problems": []
+    },
+    {
+      "case": "Invalid request (HTTP 400)",
+      "mode": "ollama",
+      "model": "qwen3:8b",
+      "expected": "invalid_request",
+      "actual": "invalid_request",
+      "citations": [
+        "E11"
+      ],
+      "tool_calls": 1,
+      "passed": true,
+      "problems": []
+    },
+    {
+      "case": "Inventory outage (HTTP 504)",
+      "mode": "ollama",
+      "model": "qwen3:8b",
+      "expected": "inventory_failure",
+      "actual": "inventory_failure",
+      "citations": [
+        "HC17",
+        "E22",
+        "E21",
+        "HC18"
+      ],
+      "tool_calls": 5,
+      "passed": true,
+      "problems": []
+    },
+    {
+      "case": "Insufficient evidence (HTTP 504)",
+      "mode": "ollama",
+      "model": "qwen3:8b",
+      "expected": "insufficient_evidence",
+      "actual": "insufficient_evidence",
+      "citations": [
+        "E31"
+      ],
+      "tool_calls": 5,
+      "passed": true,
+      "problems": []
+    },
+    {
+      "case": "Evidence removal (outage minus E22, HC17, HC18)",
+      "mode": "ollama",
+      "model": "qwen3:8b",
+      "expected": "insufficient_evidence",
+      "actual": "insufficient_evidence",
+      "citations": [
+        "E21"
+      ],
+      "tool_calls": 5,
+      "passed": true,
+      "problems": []
+    }
+  ]
+}
